@@ -110,19 +110,25 @@ local function createToggleButton(text, position)
 		-- Call your ESP function here
 		local RunService = game:GetService("RunService")
 		local Camera = workspace.CurrentCamera
+		local Players = game:GetService("Players")
+
 		local espBoxes = {} -- Store ESP boxes
-		
+		local playerESPEnabled = false
+		local botESPEnabled = false
+
+		-- Function to remove ESP
 		local function removeESP(target)
 			if espBoxes[target] then
-				espBoxes[target].box:Remove()
+				if espBoxes[target].box then
+					espBoxes[target].box:Remove() -- Remove the ESP box
+				end
 				if espBoxes[target].connection then
-					espBoxes[target].connection:Disconnect()
+					espBoxes[target].connection:Disconnect() -- Stop updating ESP
 				end
 				espBoxes[target] = nil
 			end
 		end
-		
-		
+
 		-- Function to create ESP
 		local function createESP(target)
 			if espBoxes[target] then return end -- Prevent duplicate ESP
@@ -140,13 +146,23 @@ local function createToggleButton(text, position)
 			espBoxes[target].connection = RunService.RenderStepped:Connect(function()
 				if target and target.Parent and target:FindFirstChild("HumanoidRootPart") then
 					local rootPart = target.HumanoidRootPart
+					local head = target:FindFirstChild("Head")
 					local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
 
-					if onScreen then
-						local size = Vector2.new(80, 120) -- Adjust ESP box size
-						box.Size = size
-						box.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
-						box.Visible = true
+					if onScreen and head then
+						local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+						local rootPos, rootOnScreen = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
+
+						if headOnScreen and rootOnScreen then
+							local height = math.abs(headPos.Y - rootPos.Y)
+							local width = height / 2
+
+							box.Size = Vector2.new(width, height)
+							box.Position = Vector2.new(rootPos.X - width / 2, rootPos.Y)
+							box.Visible = true
+						else
+							box.Visible = false
+						end
 					else
 						box.Visible = false
 					end
@@ -156,32 +172,41 @@ local function createToggleButton(text, position)
 			end)
 		end
 
-		-- Function to remove ESP
-	
-		-- 🔹 ESP Toggle Logic (Replaces Old Highlight System)
-		if text == "Player ESP" then
-			if isEnabled then
-				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v)
-					if player then
-						createESP(v)
+		-- Function to toggle Player ESP
+		local function togglePlayerESP(state)
+			playerESPEnabled = state
+
+			if playerESPEnabled then
+				while playerESPEnabled do
+					for _, player in pairs(Players:GetPlayers()) do
+						if player ~= Players.LocalPlayer and player.Character then
+							createESP(player.Character)
+						end
 					end
+					task.wait(1) -- Update every second
 				end
 			else
-				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v)
-					if player then
-						removeESP(v)
+				for _, player in pairs(Players:GetPlayers()) do
+					if player.Character then
+						removeESP(player.Character)
 					end
 				end
 			end
-		elseif text == "Bot ESP" then
-			if isEnabled then
-				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v)
-					if not player then -- If it's NOT a player, it's a bot
-						createESP(v)
+		end
+
+		-- Function to toggle Bot ESP
+		local function toggleBotESP(state)
+			botESPEnabled = state
+
+			if botESPEnabled then
+				while botESPEnabled do
+					for _, v in pairs(workspace.Hitboxes:GetChildren()) do
+						local player = Players:GetPlayerFromCharacter(v)
+						if not player then -- If it's NOT a player, it's a bot
+							createESP(v)
+						end
 					end
+					task.wait(1) -- Update every second
 				end
 			else
 				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
@@ -192,6 +217,14 @@ local function createToggleButton(text, position)
 				end
 			end
 		end
+
+		-- Update toggle buttons in your GUI
+		if text == "Player ESP" then
+			togglePlayerESP(isEnabled)
+		elseif text == "Bot ESP" then
+			toggleBotESP(isEnabled)
+		end
+
 
 
 	end)
