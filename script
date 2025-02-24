@@ -108,33 +108,53 @@ local function createToggleButton(text, position)
 		end
 
 		-- Call your ESP function here
-		local Players = game:GetService("Players")
-		local isEnabled = true  -- your toggle for ESP
-
-		local function updateESP(mode)  -- mode should be "Player" or "Bot"
-			while isEnabled do
-				for _, v in ipairs(workspace:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v)
-					if (mode == "Player" and player) or (mode == "Bot" and not player) then
-						local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", v)
-						highlight.Enabled = true
+		spawn(function()
+			while task.wait(0.1) do
+				if text == "Player ESP" then
+					if isEnabled then
+						for _, v in pairs(workspace:GetChildren()) do
+							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
+							if player then
+								local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
+								highlight.Parent = v
+								highlight.Enabled = true
+							end
+						end
 					else
-						local highlight = v:FindFirstChildOfClass("Highlight")
-						if highlight then
-							highlight.Enabled = false
+						for _, v in pairs(workspace:GetChildren()) do
+							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
+							if player then
+								local highlight = v:FindFirstChildOfClass("Highlight")
+								if highlight then
+									highlight.Enabled = false
+								end
+							end
+						end
+					end
+				elseif text == "Bot ESP" then
+					if isEnabled then
+						for _, v in pairs(workspace:GetChildren()) do
+							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
+							if not player then -- If it's NOT a player, it's a bot
+								local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
+								highlight.Parent = v
+								highlight.Enabled = true
+							end
+						end
+					else
+						for _, v in pairs(workspace:GetChildren()) do
+							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
+							if not player then -- If it's NOT a player, it's a bot
+								local highlight = v:FindFirstChildOfClass("Highlight")
+								if highlight then
+									highlight.Enabled = false
+								end
+							end
 						end
 					end
 				end
-				wait(0.5)
 			end
-		end
-
-		if text == "Player ESP" then
-			task.spawn(function() updateESP("Player") end)
-		elseif text == "Bot ESP" then
-			task.spawn(function() updateESP("Bot") end)
-		end
-
+		end)
 
 	end)
 
