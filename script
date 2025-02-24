@@ -1,9 +1,13 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Camera = game.Workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local VirtualInputManager = game:GetService("VirtualInputManager") -- Using VirtualInputManager
 
 -- Get Player's GUI
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
@@ -11,62 +15,41 @@ screenGui.Name = "DraggableUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Create a Frame (Draggable UI) with bigger height
+-- Create a Frame (Draggable UI)
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0.5, 0, 0.5, 0) -- Increased height (50% of screen)
-frame.Position = UDim2.new(0.35, 0, 0.3, 0) -- Centered
+frame.Size = UDim2.new(0.5, 0, 0.5, 0)
+frame.Position = UDim2.new(0.35, 0, 0.3, 0)
 frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 frame.BackgroundTransparency = 0.15
 frame.BorderSizePixel = 2
-frame.Active = true -- Enable input detection
+frame.Active = true
 frame.Parent = screenGui
 
--- Create a UI Corner for rounded edges
+-- UI Corner
 local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0, 12)
 uiCorner.Parent = frame
 
 -- Create ESP Title Label
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0.15, 0) -- Full width, 15% height
-Title.Position = UDim2.new(0, 0, -0.03, 0) -- Top of the frame
-Title.BackgroundTransparency = 1 -- No background
+Title.Size = UDim2.new(1, 0, 0.15, 0)
+Title.Position = UDim2.new(0, 0, -0.03, 0)
+Title.BackgroundTransparency = 1
 Title.Text = "No-Scope Arcade Script"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 22
-Title.TextColor3 = Color3.new(1, 1, 1) -- White text
+Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Parent = frame
 
-local espLabel = Instance.new("TextLabel")
-espLabel.Size = UDim2.new(1, 0, 0.15, 0) -- Full width, 15% height
-espLabel.Position = UDim2.new(-0.25, 0, 0.05, 0) -- Top of the frame
-espLabel.BackgroundTransparency = 1 -- No background
-espLabel.Text = "ESP"
-espLabel.Font = Enum.Font.GothamBold
-espLabel.TextSize = 22
-espLabel.TextColor3 = Color3.new(1, 1, 1) -- White text
-espLabel.Parent = frame
-
-local Aimbot = Instance.new("TextLabel")
-Aimbot.Size = UDim2.new(1, 0, 0.15, 0) -- Full width, 15% height
-Aimbot.Position = UDim2.new(0.25, 0, 0.05, 0) -- Top of the frame
-Aimbot.BackgroundTransparency = 1 -- No background
-Aimbot.Text = "ESP"
-Aimbot.Font = Enum.Font.GothamBold
-Aimbot.TextSize = 22
-Aimbot.TextColor3 = Color3.new(1, 1, 1) -- White text
-Aimbot.Parent = frame
-
-
--- Create Close (X) Button
+-- Create Close Button
 local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0.1, 0, 0.1, 0) -- Small size
-closeButton.Position = UDim2.new(0.9, 0, 0, 0) -- Top-right corner
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Red color
+closeButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+closeButton.Position = UDim2.new(0.9, 0, 0, 0)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 closeButton.Text = "X"
 closeButton.Font = Enum.Font.GothamBold
 closeButton.TextSize = 18
-closeButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+closeButton.TextColor3 = Color3.new(1, 1, 1)
 closeButton.Parent = frame
 
 -- UI Corner for Close Button
@@ -74,30 +57,21 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeButton
 
--- Close Button Hover Effect
-closeButton.MouseEnter:Connect(function()
-	closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Brighter red on hover
-end)
-
-closeButton.MouseLeave:Connect(function()
-	closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Normal red
-end)
-
 -- Close Button Functionality
 closeButton.MouseButton1Click:Connect(function()
 	screenGui:Destroy()
 end)
 
 -- Function to create toggle buttons
-local function createToggleButton(text, position)
+local function createToggleButton(text, position, callback)
 	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(0.3, 0, 0.15, 0) -- 30% width, 15% height
-	button.Position = UDim2.new(0.1, 0, position, 0) -- Centered
-	button.BackgroundColor3 = Color3.fromRGB(80, 170, 255) -- Default blue
+	button.Size = UDim2.new(0.3, 0, 0.15, 0)
+	button.Position = UDim2.new(0.1, 0, position, 0)
+	button.BackgroundColor3 = Color3.fromRGB(80, 170, 255)
 	button.Text = text .. " OFF"
 	button.Font = Enum.Font.GothamBold
 	button.TextSize = 18
-	button.TextColor3 = Color3.new(1, 1, 1) -- White text
+	button.TextColor3 = Color3.new(1, 1, 1)
 	button.Parent = frame
 
 	-- UI Corner for button
@@ -110,71 +84,63 @@ local function createToggleButton(text, position)
 
 	button.MouseButton1Click:Connect(function()
 		isEnabled = not isEnabled
-		if isEnabled then
-			button.BackgroundColor3 = Color3.fromRGB(50, 140, 230) -- Darker blue
-			button.Text = text .. " ON"
-		else
-			button.BackgroundColor3 = Color3.fromRGB(80, 170, 255) -- Default blue
-			button.Text = text .. " OFF"
-		end
-
-		-- Call your ESP function here
-		spawn(function()
-			while task.wait(0.1) do
-				if text == "Player ESP" then
-					if isEnabled then
-						for _, v in pairs(workspace:GetChildren()) do
-							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
-							if player then
-								local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
-								highlight.Parent = v
-								highlight.Enabled = true
-							end
-						end
-					else
-						for _, v in pairs(workspace:GetChildren()) do
-							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
-							if player then
-								local highlight = v:FindFirstChildOfClass("Highlight")
-								if highlight then
-									highlight.Enabled = false
-								end
-							end
-						end
-					end
-				elseif text == "Bot ESP" then
-					if isEnabled then
-						for _, v in pairs(workspace:GetChildren()) do
-							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
-							if not player then -- If it's NOT a player, it's a bot
-								local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
-								highlight.Parent = v
-								highlight.Enabled = true
-							end
-						end
-					else
-						for _, v in pairs(workspace:GetChildren()) do
-							local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
-							if not player then -- If it's NOT a player, it's a bot
-								local highlight = v:FindFirstChildOfClass("Highlight")
-								if highlight then
-									highlight.Enabled = false
-								end
-							end
-						end
-					end
-				end
-			end
-		end)
-
+		button.BackgroundColor3 = isEnabled and Color3.fromRGB(50, 140, 230) or Color3.fromRGB(80, 170, 255)
+		button.Text = text .. (isEnabled and " ON" or " OFF")
+		callback(isEnabled)
 	end)
 
 	return button
 end
 
--- Create Toggle Buttons
-local playerESPButton = createToggleButton("Player ESP", 0.2)
-local botESPButton = createToggleButton("Bot ESP", 0.4)
+-- ESP Functions
+local function toggleESP(isEnabled, isPlayer)
+	spawn(function()
+		while isEnabled do
+			for _, v in pairs(workspace:GetChildren()) do
+				local player = Players:GetPlayerFromCharacter(v)
+				local isTarget = isPlayer and player or not isPlayer and not player
+				if isTarget then
+					local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
+					highlight.Parent = v
+					highlight.Enabled = isEnabled
+				end
+			end
+			wait(0.1)
+		end
+	end)
+end
+
+-- Create ESP Buttons
+local playerESPButton = createToggleButton("Player ESP", 0.2, function(isEnabled)
+	toggleESP(isEnabled, true)
+end)
+
+local botESPButton = createToggleButton("Bot ESP", 0.4, function(isEnabled)
+	toggleESP(isEnabled, false)
+end)
+
+-- Triggerbot Functionality
+local triggerbotEnabled = false
+
+local function triggerbot()
+	while triggerbotEnabled do
+		local target = Mouse.Target
+		if target and target.Parent and target.Parent:FindFirstChild("Humanoid") then
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1) -- Press Mouse Button
+			wait(0.05)
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1) -- Release Mouse Button
+		end
+		wait(0.01)
+	end
+end
+
+-- Create Triggerbot Button
+local triggerbotButton = createToggleButton("Triggerbot", 0.6, function(isEnabled)
+	triggerbotEnabled = isEnabled
+	if triggerbotEnabled then
+		spawn(triggerbot)
+	end
+end)
 
 -- Dragging variables
 local dragging, dragInput, startPos, startInputPos
