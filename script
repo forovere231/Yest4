@@ -1,178 +1,79 @@
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = game.Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-local VirtualInputManager = game:GetService("VirtualInputManager") -- Using VirtualInputManager
 
--- Get Player's GUI
-local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+-- Silent Aim Variables
+local SilentAimEnabled = false
+local AimFOV = 150 -- Adjust for aim assist range
+local TargetPart = "Head" -- Change to "Torso" if needed
 
--- Create ScreenGui
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DraggableUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+-- Function to get the closest player within FOV
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = AimFOV
 
--- Create a Frame (Draggable UI)
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0.5, 0, 0.5, 0)
-frame.Position = UDim2.new(0.35, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-frame.BackgroundTransparency = 0.15
-frame.BorderSizePixel = 2
-frame.Active = true
-frame.Parent = screenGui
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(TargetPart) then
+            local targetPart = player.Character:FindFirstChild(TargetPart)
+            local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+            if onScreen then
+                local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                if distance < shortestDistance then
+                    closestPlayer = targetPart
+                    shortestDistance = distance
+                end
+            end
+        end
+    end
 
--- UI Corner
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 12)
-uiCorner.Parent = frame
-
--- Create ESP Title Label
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0.15, 0)
-Title.Position = UDim2.new(0, 0, -0.03, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "No-Scope Arcade Script"
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Parent = frame
-
--- Create Close Button
-local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0.1, 0, 0.1, 0)
-closeButton.Position = UDim2.new(0.9, 0, 0, 0)
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeButton.Text = "X"
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 18
-closeButton.TextColor3 = Color3.new(1, 1, 1)
-closeButton.Parent = frame
-
--- UI Corner for Close Button
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeButton
-
--- Close Button Functionality
-closeButton.MouseButton1Click:Connect(function()
-	screenGui:Destroy()
-end)
-
--- Function to create toggle buttons
-local function createToggleButton(text, position, callback)
-	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(0.3, 0, 0.15, 0)
-	button.Position = UDim2.new(0.1, 0, position, 0)
-	button.BackgroundColor3 = Color3.fromRGB(80, 170, 255)
-	button.Text = text .. " OFF"
-	button.Font = Enum.Font.GothamBold
-	button.TextSize = 18
-	button.TextColor3 = Color3.new(1, 1, 1)
-	button.Parent = frame
-
-	-- UI Corner for button
-	local buttonCorner = Instance.new("UICorner")
-	buttonCorner.CornerRadius = UDim.new(0, 10)
-	buttonCorner.Parent = button
-
-	-- Toggle state
-	local isEnabled = false
-
-	button.MouseButton1Click:Connect(function()
-		isEnabled = not isEnabled
-		button.BackgroundColor3 = isEnabled and Color3.fromRGB(50, 140, 230) or Color3.fromRGB(80, 170, 255)
-		button.Text = text .. (isEnabled and " ON" or " OFF")
-		callback(isEnabled)
-	end)
-
-	return button
+    return closestPlayer
 end
 
--- ESP Functions
-local function toggleESP(isEnabled, isPlayer)
-	spawn(function()
-		while isEnabled do
-			for _, v in pairs(workspace:GetChildren()) do
-				local player = Players:GetPlayerFromCharacter(v)
-				local isTarget = isPlayer and player or not isPlayer and not player
-				if isTarget then
-					local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
-					highlight.Parent = v
-					highlight.Enabled = isEnabled
-				end
-			end
-			wait(0.1)
-		end
-	end)
-end
+-- Hooking Mouse Hit
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
 
--- Create ESP Buttons
-local playerESPButton = createToggleButton("Player ESP", 0.2, function(isEnabled)
-	toggleESP(isEnabled, true)
+    -- Modify Raycast Hits (Silent Aim)
+    if SilentAimEnabled and method == "FindPartOnRayWithIgnoreList" then
+        local target = getClosestPlayer()
+        if target then
+            args[1] = Ray.new(Camera.CFrame.Position, (target.Position - Camera.CFrame.Position).unit * 1000)
+        end
+    end
+
+    return oldNamecall(self, unpack(args))
 end)
 
-local botESPButton = createToggleButton("Bot ESP", 0.4, function(isEnabled)
-	toggleESP(isEnabled, false)
-end)
+-- Toggle UI for Silent Aim
+local function createSilentAimToggle()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "SilentAimUI"
+    screenGui.Parent = game:GetService("CoreGui")
 
--- Triggerbot Functionality
-local triggerbotEnabled = false
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 120, 0, 40)
+    toggleButton.Position = UDim2.new(0, 20, 0, 200)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(50, 170, 255)
+    toggleButton.Text = "Silent Aim: OFF"
+    toggleButton.Font = Enum.Font.GothamBold
+    toggleButton.TextSize = 16
+    toggleButton.TextColor3 = Color3.new(1, 1, 1)
+    toggleButton.Parent = screenGui
 
-local function triggerbot()
-	while triggerbotEnabled do
-		local target = Mouse.Target
-		if target and target.Parent and target.Parent:FindFirstChild("Humanoid") then
-			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1) -- Press Mouse Button
-			wait(0.05)
-			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1) -- Release Mouse Button
-		end
-		wait(0.01)
-	end
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 10)
+    uiCorner.Parent = toggleButton
+
+    toggleButton.MouseButton1Click:Connect(function()
+        SilentAimEnabled = not SilentAimEnabled
+        toggleButton.Text = "Silent Aim: " .. (SilentAimEnabled and "ON" or "OFF")
+        toggleButton.BackgroundColor3 = SilentAimEnabled and Color3.fromRGB(50, 140, 230) or Color3.fromRGB(80, 170, 255)
+    end)
 end
 
--- Create Triggerbot Button
-local triggerbotButton = createToggleButton("Triggerbot", 0.6, function(isEnabled)
-	triggerbotEnabled = isEnabled
-	if triggerbotEnabled then
-		spawn(triggerbot)
-	end
-end)
-
--- Dragging variables
-local dragging, dragInput, startPos, startInputPos
-
-local function onInputBegan(input, gameProcessed)
-	if gameProcessed then return end
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		startInputPos = input.Position
-		startPos = frame.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end
-
-local function onInputChanged(input)
-	if dragging and input == dragInput then
-		local delta = input.Position - startInputPos
-		frame.Position = UDim2.new(
-			startPos.X.Scale, startPos.X.Offset + delta.X,
-			startPos.Y.Scale, startPos.Y.Offset + delta.Y
-		)
-	end
-end
-
-frame.InputBegan:Connect(onInputBegan)
-frame.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
-end)
-UserInputService.InputChanged:Connect(onInputChanged)
+createSilentAimToggle()
