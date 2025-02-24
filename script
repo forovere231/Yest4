@@ -111,11 +111,11 @@ local function createToggleButton(text, position)
 		local Players = game:GetService("Players")
 		local isEnabled = true  -- your toggle for ESP
 
-		local function updatePlayerESP()
+		local function updateESP(mode)  -- mode should be "Player" or "Bot"
 			while isEnabled do
 				for _, v in ipairs(workspace:GetChildren()) do
 					local player = Players:GetPlayerFromCharacter(v)
-					if player then
+					if (mode == "Player" and player) or (mode == "Bot" and not player) then
 						local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", v)
 						highlight.Enabled = true
 					else
@@ -125,12 +125,15 @@ local function createToggleButton(text, position)
 						end
 					end
 				end
-				wait(0.5)  -- adjust delay as needed for performance vs. responsiveness
+				wait(0.5)
 			end
 		end
 
-		-- Run the loop without blocking the main thread
-		task.spawn(updatePlayerESP)
+		if text == "Player ESP" then
+			task.spawn(function() updateESP("Player") end)
+		elseif text == "Bot ESP" then
+			task.spawn(function() updateESP("Bot") end)
+		end
 
 
 	end)
