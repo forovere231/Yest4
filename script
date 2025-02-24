@@ -144,31 +144,20 @@ local function createToggleButton(text, position)
 
 			-- Update ESP position every frame
 			espBoxes[target].connection = RunService.RenderStepped:Connect(function()
-				if target and target.Parent and target:FindFirstChild("HumanoidRootPart") then
+				if target and target.Parent and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("Head") then
 					local rootPart = target.HumanoidRootPart
-					local head = target:FindFirstChild("Head")
-					local humanoid = target:FindFirstChildOfClass("Humanoid")
-					local Status = target:FindFirstChild("Status") -- **Uppercase S**
+					local head = target.Head
 
-					if Status and Status.Value ~= "Alive" then
-						removeESP(target) -- Remove ESP if player is not alive
-						return
-					end
+					local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+					local rootPos, rootOnScreen = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 2.5, 0))
 
-					if humanoid and head then
-						local screenHeadPos, headOnScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-						local screenRootPos, rootOnScreen = Camera:WorldToViewportPoint(rootPart.Position)
+					if headOnScreen and rootOnScreen then
+						local height = math.abs(headPos.Y - rootPos.Y)
+						local width = height / 2.2  -- Adjust width ratio
 
-						if headOnScreen and rootOnScreen then
-							local height = math.abs(screenHeadPos.Y - screenRootPos.Y) -- Dynamic height
-							local width = height * 0.6 -- Adjust width based on height
-
-							box.Size = Vector2.new(width, height)
-							box.Position = Vector2.new(screenRootPos.X - width / 2, screenRootPos.Y - height / 2) -- Center the box
-							box.Visible = true
-						else
-							box.Visible = false
-						end
+						box.Size = Vector2.new(width, height)
+						box.Position = Vector2.new(rootPos.X - width / 2, rootPos.Y)
+						box.Visible = true
 					else
 						box.Visible = false
 					end
@@ -186,12 +175,7 @@ local function createToggleButton(text, position)
 				while playerESPEnabled do
 					for _, player in pairs(Players:GetPlayers()) do
 						if player ~= Players.LocalPlayer and player.Character then
-							local Status = player.Character:FindFirstChild("Status") -- **Uppercase S**
-							if Status and Status.Value == "Alive" then
-								createESP(player.Character)
-							else
-								removeESP(player.Character)
-							end
+							createESP(player.Character)
 						end
 					end
 					task.wait(1) -- Update every second
@@ -202,6 +186,45 @@ local function createToggleButton(text, position)
 						removeESP(player.Character)
 					end
 				end
+			end
+		end
+
+		-- Function to toggle Bot ESP
+		local function toggleBotESP(state)
+			botESPEnabled = state
+
+			if botESPEnabled then
+				while botESPEnabled do
+					for _, v in pairs(workspace.Hitboxes:GetChildren()) do
+						local player = Players:GetPlayerFromCharacter(v)
+						if not player then -- If it's NOT a player, it's a bot
+							createESP(v)
+						end
+					end
+					task.wait(1) -- Update every second
+				end
+			else
+				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
+					local player = Players:GetPlayerFromCharacter(v)
+					if not player then -- If it's NOT a player, it's a bot
+						removeESP(v)
+					end
+				end
+			end
+		end
+
+		-- Toggle Buttons Handling
+		if text == "Player ESP" then
+			if isEnabled then
+				togglePlayerESP(true)
+			else
+				togglePlayerESP(false)
+			end
+		elseif text == "Bot ESP" then
+			if isEnabled then
+				toggleBotESP(true)
+			else
+				toggleBotESP(false)
 			end
 		end
 
