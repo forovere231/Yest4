@@ -1,0 +1,239 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+-- Get Player's GUI
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DraggableUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Create a Frame (Draggable UI) with bigger height
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0.5, 0, 0.5, 0) -- Increased height (50% of screen)
+frame.Position = UDim2.new(0.35, 0, 0.3, 0) -- Centered
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.BackgroundTransparency = 0.15
+frame.BorderSizePixel = 2
+frame.Active = true -- Enable input detection
+frame.Parent = screenGui
+
+-- Create a UI Corner for rounded edges
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 12)
+uiCorner.Parent = frame
+
+-- Create ESP Title Label
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0.15, 0) -- Full width, 15% height
+Title.Position = UDim2.new(0, 0, -0.03, 0) -- Top of the frame
+Title.BackgroundTransparency = 1 -- No background
+Title.Text = "No-Scope Arcade Script"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.TextColor3 = Color3.new(1, 1, 1) -- White text
+Title.Parent = frame
+
+local espLabel = Instance.new("TextLabel")
+espLabel.Size = UDim2.new(1, 0, 0.15, 0) -- Full width, 15% height
+espLabel.Position = UDim2.new(-0.25, 0, 0.05, 0) -- Top of the frame
+espLabel.BackgroundTransparency = 1 -- No background
+espLabel.Text = "ESP"
+espLabel.Font = Enum.Font.GothamBold
+espLabel.TextSize = 22
+espLabel.TextColor3 = Color3.new(1, 1, 1) -- White text
+espLabel.Parent = frame
+
+-- Create Close (X) Button
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0.1, 0, 0.1, 0) -- Small size
+closeButton.Position = UDim2.new(0.9, 0, 0, 0) -- Top-right corner
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Red color
+closeButton.Text = "X"
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 18
+closeButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+closeButton.Parent = frame
+
+-- UI Corner for Close Button
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeButton
+
+-- Close Button Hover Effect
+closeButton.MouseEnter:Connect(function()
+	closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Brighter red on hover
+end)
+
+closeButton.MouseLeave:Connect(function()
+	closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Normal red
+end)
+
+-- Close Button Functionality
+closeButton.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
+
+-- Function to create toggle buttons
+local function createToggleButton(text, position)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(0.3, 0, 0.15, 0) -- 30% width, 15% height
+	button.Position = UDim2.new(0.1, 0, position, 0) -- Centered
+	button.BackgroundColor3 = Color3.fromRGB(80, 170, 255) -- Default blue
+	button.Text = text .. " OFF"
+	button.Font = Enum.Font.GothamBold
+	button.TextSize = 18
+	button.TextColor3 = Color3.new(1, 1, 1) -- White text
+	button.Parent = frame
+
+	-- UI Corner for button
+	local buttonCorner = Instance.new("UICorner")
+	buttonCorner.CornerRadius = UDim.new(0, 10)
+	buttonCorner.Parent = button
+
+	-- Toggle state
+	local isEnabled = false
+
+	button.MouseButton1Click:Connect(function()
+		isEnabled = not isEnabled
+		if isEnabled then
+			button.BackgroundColor3 = Color3.fromRGB(50, 140, 230) -- Darker blue
+			button.Text = text .. " ON"
+		else
+			button.BackgroundColor3 = Color3.fromRGB(80, 170, 255) -- Default blue
+			button.Text = text .. " OFF"
+		end
+
+		-- Call your ESP function here
+		local RunService = game:GetService("RunService")
+		local Camera = workspace.CurrentCamera
+		local espBoxes = {} -- Store ESP boxes
+		
+		local function removeESP(target)
+			if espBoxes[target] then
+				espBoxes[target].box:Remove()
+				if espBoxes[target].connection then
+					espBoxes[target].connection:Disconnect()
+				end
+				espBoxes[target] = nil
+			end
+		end
+		
+		
+		-- Function to create ESP
+		local function createESP(target)
+			if espBoxes[target] then return end -- Prevent duplicate ESP
+
+			local box = Drawing.new("Square")
+			box.Color = Color3.fromRGB(255, 0, 0) -- Red ESP
+			box.Thickness = 2
+			box.Filled = false
+			box.Transparency = 1
+			box.Visible = false -- Initially hidden
+
+			espBoxes[target] = {box = box, connection = nil}
+
+			-- Update ESP position every frame
+			espBoxes[target].connection = RunService.RenderStepped:Connect(function()
+				if target and target.Parent and target:FindFirstChild("HumanoidRootPart") then
+					local rootPart = target.HumanoidRootPart
+					local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+
+					if onScreen then
+						local size = Vector2.new(80, 120) -- Adjust ESP box size
+						box.Size = size
+						box.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
+						box.Visible = true
+					else
+						box.Visible = false
+					end
+				else
+					removeESP(target) -- Remove ESP if character is gone
+				end
+			end)
+		end
+
+		-- Function to remove ESP
+	
+		-- 🔹 ESP Toggle Logic (Replaces Old Highlight System)
+		if text == "Player ESP" then
+			if isEnabled then
+				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
+					local player = Players:GetPlayerFromCharacter(v)
+					if player then
+						createESP(v)
+					end
+				end
+			else
+				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
+					local player = Players:GetPlayerFromCharacter(v)
+					if player then
+						removeESP(v)
+					end
+				end
+			end
+		elseif text == "Bot ESP" then
+			if isEnabled then
+				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
+					local player = Players:GetPlayerFromCharacter(v)
+					if not player then -- If it's NOT a player, it's a bot
+						createESP(v)
+					end
+				end
+			else
+				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
+					local player = Players:GetPlayerFromCharacter(v)
+					if not player then -- If it's NOT a player, it's a bot
+						removeESP(v)
+					end
+				end
+			end
+		end
+
+
+	end)
+
+	return button
+end
+
+-- Create Toggle Buttons
+local playerESPButton = createToggleButton("Player ESP", 0.2)
+local botESPButton = createToggleButton("Bot ESP", 0.4)
+
+-- Dragging variables
+local dragging, dragInput, startPos, startInputPos
+
+local function onInputBegan(input, gameProcessed)
+	if gameProcessed then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		startInputPos = input.Position
+		startPos = frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end
+
+local function onInputChanged(input)
+	if dragging and input == dragInput then
+		local delta = input.Position - startInputPos
+		frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end
+
+frame.InputBegan:Connect(onInputBegan)
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+UserInputService.InputChanged:Connect(onInputChanged)
