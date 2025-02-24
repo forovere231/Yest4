@@ -108,49 +108,30 @@ local function createToggleButton(text, position)
 		end
 
 		-- Call your ESP function here
-		if text == "Player ESP" then
-			if isEnabled then
-				for _, v in pairs(workspace:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
+		local Players = game:GetService("Players")
+		local isEnabled = true  -- your toggle for ESP
+
+		local function updatePlayerESP()
+			while isEnabled do
+				for _, v in ipairs(workspace:GetChildren()) do
+					local player = Players:GetPlayerFromCharacter(v)
 					if player then
-						local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
-						highlight.Parent = v
+						local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", v)
 						highlight.Enabled = true
-					end
-				end
-			else
-				for _, v in pairs(workspace:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
-					if player then
+					else
 						local highlight = v:FindFirstChildOfClass("Highlight")
 						if highlight then
 							highlight.Enabled = false
 						end
 					end
 				end
-			end
-		elseif text == "Bot ESP" then
-			if isEnabled then
-				for _, v in pairs(workspace:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
-					if not player then -- If it's NOT a player, it's a bot
-						local highlight = v:FindFirstChildOfClass("Highlight") or Instance.new("Highlight")
-						highlight.Parent = v
-						highlight.Enabled = true
-					end
-				end
-			else
-				for _, v in pairs(workspace:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v) -- Check if it's a player
-					if not player then -- If it's NOT a player, it's a bot
-						local highlight = v:FindFirstChildOfClass("Highlight")
-						if highlight then
-							highlight.Enabled = false
-						end
-					end
-				end
+				wait(0.5)  -- adjust delay as needed for performance vs. responsiveness
 			end
 		end
+
+		-- Run the loop without blocking the main thread
+		task.spawn(updatePlayerESP)
+
 
 	end)
 
