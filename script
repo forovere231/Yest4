@@ -47,6 +47,17 @@ espLabel.TextSize = 22
 espLabel.TextColor3 = Color3.new(1, 1, 1) -- White text
 espLabel.Parent = frame
 
+local Aimbot = Instance.new("TextLabel")
+Aimbot.Size = UDim2.new(1, 0, 0.15, 0) -- Full width, 15% height
+Aimbot.Position = UDim2.new(0.25, 0, 0.05, 0) -- Top of the frame
+Aimbot.BackgroundTransparency = 1 -- No background
+Aimbot.Text = "ESP"
+Aimbot.Font = Enum.Font.GothamBold
+Aimbot.TextSize = 22
+Aimbot.TextColor3 = Color3.new(1, 1, 1) -- White text
+Aimbot.Parent = frame
+
+
 -- Create Close (X) Button
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.new(0.1, 0, 0.1, 0) -- Small size
