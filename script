@@ -148,9 +148,9 @@ local function createToggleButton(text, position)
 					local rootPart = target.HumanoidRootPart
 					local head = target:FindFirstChild("Head")
 					local humanoid = target:FindFirstChildOfClass("Humanoid")
-					local status = target:FindFirstChild("Status") -- Check for Status Value
+					local Status = target:FindFirstChild("Status") -- **Uppercase S**
 
-					if status and status.Value ~= "Alive" then
+					if Status and Status.Value ~= "Alive" then
 						removeESP(target) -- Remove ESP if player is not alive
 						return
 					end
@@ -186,8 +186,8 @@ local function createToggleButton(text, position)
 				while playerESPEnabled do
 					for _, player in pairs(Players:GetPlayers()) do
 						if player ~= Players.LocalPlayer and player.Character then
-							local status = player.Character:FindFirstChild("Status")
-							if status and status.Value == "Alive" then
+							local Status = player.Character:FindFirstChild("Status") -- **Uppercase S**
+							if Status and Status.Value == "Alive" then
 								createESP(player.Character)
 							else
 								removeESP(player.Character)
@@ -205,40 +205,7 @@ local function createToggleButton(text, position)
 			end
 		end
 
-		-- Function to toggle Bot ESP
-		local function toggleBotESP(state)
-			botESPEnabled = state
 
-			if botESPEnabled then
-				while botESPEnabled do
-					for _, v in pairs(workspace.Hitboxes:GetChildren()) do
-						local player = Players:GetPlayerFromCharacter(v)
-						local status = v:FindFirstChild("Status")
-
-						if not player and status and status.Value == "Alive" then -- If it's NOT a player & is Alive
-							createESP(v)
-						else
-							removeESP(v)
-						end
-					end
-					task.wait(1) -- Update every second
-				end
-			else
-				for _, v in pairs(workspace.Hitboxes:GetChildren()) do
-					local player = Players:GetPlayerFromCharacter(v)
-					if not player then -- If it's NOT a player, it's a bot
-						removeESP(v)
-					end
-				end
-			end
-		end
-
-		-- Update toggle buttons in your GUI
-		if text == "Player ESP" then
-			togglePlayerESP(isEnabled)
-		elseif text == "Bot ESP" then
-			toggleBotESP(isEnabled)
-		end
 
 	end)
 
